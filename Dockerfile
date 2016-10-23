@@ -7,4 +7,4 @@ ADD opt-bin /opt-bin/
 ADD init.sh /
 RUN chmod +x ./init.sh
 
-CMD ["init.sh"]
+CMD ["./init.sh"]
