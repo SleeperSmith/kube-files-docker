@@ -1,0 +1,22 @@
+#!/bin/bash -e
+
+for encKey in $(find /etc/kubernetes/ssl/*.pem.enc);do
+  sudo rkt run \
+  --volume=ssl,kind=host,source=/etc/kubernetes/ssl,readOnly=false \
+  --mount=volume=ssl,target=/etc/kubernetes/ssl \
+  --uuid-file-save=/var/run/coreos/decrypt-tls-assets.uuid \
+  --dns=8.8.8.8 --dns=8.8.4.4 \
+  --net=host \
+  --trust-keys-from-https \
+  quay.io/coreos/awscli --exec=/bin/bash -- \
+    -c \
+    "/usr/bin/aws \
+      --region ap-southeast-2 kms decrypt \
+      --ciphertext-blob fileb://$encKey \
+      --output text \
+      --query Plaintext \
+      > $encKey.b64"
+
+  base64 --decode < $encKey.b64 > ${encKey%.enc}
+  sudo rkt rm --uuid-file=/var/run/coreos/decrypt-tls-assets.uuid
+done
